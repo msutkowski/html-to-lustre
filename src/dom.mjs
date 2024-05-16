@@ -1,5 +1,178 @@
 import { Ok } from "./gleam.mjs";
 
+const supportedTags = [
+  "a",
+  "abbr",
+  "address",
+  "area",
+  "article",
+  "aside",
+  "audio",
+  "b",
+  "base",
+  "bdi",
+  "bdo",
+  "blockquote",
+  "body",
+  "br",
+  "button",
+  "canvas",
+  "caption",
+  "cite",
+  "code",
+  "col",
+  "colgroup",
+  "data",
+  "datalist",
+  "dd",
+  "del",
+  "details",
+  "dfn",
+  "dialog",
+  "div",
+  "dl",
+  "dt",
+  "em",
+  "embed",
+  "fieldset",
+  "figcaption",
+  "figure",
+  "footer",
+  "form",
+  "h1",
+  "h2",
+  "h3",
+  "h4",
+  "h5",
+  "h6",
+  "head",
+  "header",
+  "hgroup",
+  "hr",
+  "html",
+  "i",
+  "iframe",
+  "img",
+  "input",
+  "ins",
+  "kbd",
+  "label",
+  "legend",
+  "li",
+  "link",
+  "main",
+  "map",
+  "mark",
+  "math",
+  "menu",
+  "meta",
+  "meter",
+  "nav",
+  "noscript",
+  "object",
+  "ol",
+  "optgroup",
+  "option",
+  "output",
+  "p",
+  "picture",
+  "portal",
+  "pre",
+  "progress",
+  "q",
+  "rp",
+  "rt",
+  "ruby",
+  "s",
+  "samp",
+  "script",
+  "search",
+  "section",
+  "select",
+  "slot",
+  "small",
+  "source",
+  "span",
+  "strong",
+  "style",
+  "sub",
+  "summary",
+  "sup",
+  "svg",
+  "table",
+  "tbody",
+  "td",
+  "template",
+  "text",
+  "textarea",
+  "tfoot",
+  "th",
+  "thead",
+  "time",
+  "title",
+  "tr",
+  "track",
+  "u",
+  "ul",
+  "var",
+  "video",
+  "wbr",
+];
+
+const supportedAttributes = [
+  "accept",
+  "accept_charset",
+  "action",
+  "alt",
+  "autocomplete",
+  "autofocus",
+  "autoplay",
+  "checked",
+  "class",
+  "classes",
+  "cols",
+  "controls",
+  "disabled",
+  "download",
+  "enctype",
+  "for",
+  "form_action",
+  "form_enctype",
+  "form_method",
+  "form_novalidate",
+  "form_target",
+  "height",
+  "href",
+  "id",
+  "loop",
+  "map",
+  "max",
+  "method",
+  "min",
+  "msg",
+  "name",
+  "none",
+  "novalidate",
+  "on",
+  "pattern",
+  "placeholder",
+  "property",
+  "readonly",
+  "rel",
+  "required",
+  "role",
+  "rows",
+  "selected",
+  "src",
+  "step",
+  "style",
+  "target",
+  "type_",
+  "value",
+  "width",
+  "wrap",
+];
+
 function domToString(node) {
   if (!node) return "";
 
@@ -19,6 +192,9 @@ function domToString(node) {
       if (attrName === "type") {
         attrName = "type_";
       }
+      if (!supportedAttributes.includes(attrName)) {
+        attrName = "attribute";
+      }
       attrStrings.push(`attribute.${attrName}(${JSON.stringify(attr.value)})`);
     }
     return attrStrings;
@@ -30,7 +206,12 @@ function domToString(node) {
       return JSON.stringify(node.nodeValue);
     }
 
-    const tagName = toSnakeCase(node.tagName.toLowerCase());
+    let tagName = toSnakeCase(node.tagName.toLowerCase());
+    if (!supportedTags.includes(tagName)) {
+      tagName = "element.element";
+    } else {
+      tagName = `html.${tagName}`;
+    }
     const attributes = getAttributesString(node.attributes);
     const children = [];
 
@@ -38,9 +219,7 @@ function domToString(node) {
       children.push(processNode(child));
     }
 
-    return `html.${tagName}([${attributes.join(", ")}], [${children.join(
-      ", "
-    )}])`;
+    return `${tagName}([${attributes.join(", ")}], [${children.join(", ")}])`;
   }
 
   return processNode(node);

@@ -92,6 +92,6 @@ fn clipboard_svg() -> Element(Msg) {
 }
 
 @external(javascript, "../dom.mjs", "parse")
-fn parse_dom(html: String) -> Result(String, String) {
+fn parse_dom(_html: String) -> Result(String, String) {
   Error("not implemented")
 }
