@@ -25,16 +25,16 @@ pub fn on_load(_config: Config) -> Effect(Msg) {
 pub fn update(msg: Msg, model: Model) -> #(Model, Effect(Msg)) {
   case msg {
     SetHTML(html) -> {
-      #(
-        Model(..model, input_html: html, output_html: html_to_lustre(html)),
-        effect.none(),
-      )
+      case parse_dom(html) {
+        Ok(dom) -> {
+          #(Model(..model, input_html: html, output_html: dom), effect.none())
+        }
+        Error(err) -> {
+          #(Model(..model, input_html: html, output_html: err), effect.none())
+        }
+      }
     }
   }
-}
-
-fn html_to_lustre(html: String) -> String {
-  html
 }
 
 pub fn view(model: Model) -> Element(Msg) {
@@ -89,4 +89,9 @@ fn clipboard_svg() -> Element(Msg) {
       ]),
     ],
   )
+}
+
+@external(javascript, "../dom.mjs", "parse")
+fn parse_dom(html: String) -> Result(String, String) {
+  Error("not implemented")
 }
