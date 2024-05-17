@@ -5,3 +5,5 @@ erl_crash.dump
 .env
 node_modules
 *.sqlite3
+
+dist

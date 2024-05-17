@@ -1,3 +1,5 @@
+name: Deploy
+
 on:
   push:
     branches:
@@ -19,12 +21,12 @@ jobs:
       - uses: erlef/setup-beam@v1
         with:
           otp-version: false
-          gleam-version: "1.1.0"
+          version-file: .tool-versions
 
       - name: Setup Node.js environment
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          version-file: .tool-versions
           cache: "npm"
 
       - name: Install dependencies
