@@ -188,14 +188,20 @@ function domToString(node) {
   function getAttributesString(attributes) {
     const attrStrings = [];
     for (let attr of attributes) {
+      let attrValue = attr.value;
       let attrName = toSnakeCase(attr.name);
       if (attrName === "type") {
         attrName = "type_";
       }
       if (!supportedAttributes.includes(attrName)) {
         attrName = "attribute";
+        attrValue = `${JSON.stringify(attrName)}, ${JSON.stringify(
+          attr.value
+        )}`;
+      } else {
+        attrValue = JSON.stringify(attrValue);
       }
-      attrStrings.push(`attribute.${attrName}(${JSON.stringify(attr.value)})`);
+      attrStrings.push(`attribute.${attrName.trim()}(${attrValue.trim()})`);
     }
     return attrStrings;
   }
@@ -203,23 +209,28 @@ function domToString(node) {
   // Function to process a single node and its children
   function processNode(node) {
     if (node.nodeType === Node.TEXT_NODE) {
-      return JSON.stringify(node.nodeValue);
+      return `text(${JSON.stringify(node.nodeValue)})`;
     }
 
     let tagName = toSnakeCase(node.tagName.toLowerCase());
     if (!supportedTags.includes(tagName)) {
-      tagName = "element.element";
+      tagName = `element.element(${JSON.stringify(tagName)}, `;
     } else {
-      tagName = `html.${tagName}`;
+      tagName = `html.${tagName}(`;
     }
     const attributes = getAttributesString(node.attributes);
     const children = [];
 
     for (let child of node.childNodes) {
+      if (child.nodeType === Node.TEXT_NODE && child.nodeValue.trim() === "") {
+        continue;
+      }
       children.push(processNode(child));
     }
 
-    return `${tagName}([${attributes.join(", ")}], [${children.join(", ")}])`;
+    return `${tagName.trim()}[${attributes.join(", ")}], [${children
+      .join(", ")
+      .trim()}])`;
   }
 
   return processNode(node);
