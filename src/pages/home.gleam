@@ -2,7 +2,7 @@ import config.{type Config}
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{button, div, h1, span, svg, textarea}
+import lustre/element/html.{button, div, h1, span, svg}
 import lustre/element/svg.{path}
 import lustre/event
 
@@ -45,9 +45,14 @@ pub fn view(model: Model) -> Element(Msg) {
     div([class("flex mt-2")], [
       div([class("w-1/2 p-2")], [
         div([class("font-bold mr-2 my-3")], [text("Input HTML")]),
-        textarea(
-          [class("w-full h-full border-2"), event.on_input(SetHTML)],
-          model.input_html,
+        element.element(
+          "hey-monaco-editor",
+          [
+            class("w-full h-full border-2"),
+            event.on_input(SetHTML),
+            attribute.value(model.input_html),
+          ],
+          [],
         ),
       ]),
       div([class("w-1/2 p-2")], [
