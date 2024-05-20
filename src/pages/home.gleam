@@ -14,6 +14,8 @@ pub type Model {
 pub opaque type Msg {
   SetHTML(String)
   Formatted(Result(String, String))
+  CopyToClipboard(String)
+  DidCopy(Result(String, String))
 }
 
 pub fn init(config: Config) -> Model {
@@ -44,6 +46,11 @@ pub fn update(msg: Msg, model: Model) -> #(Model, Effect(Msg)) {
         Error(_error) -> #(model, effect.none())
       }
     }
+    CopyToClipboard(html) -> {
+      #(model, copy_to_clipboard(html, DidCopy))
+    }
+    // Do something with the copy result later
+    DidCopy(_result) -> #(model, effect.none())
   }
 }
 
@@ -72,6 +79,7 @@ pub fn view(model: Model) -> Element(Msg) {
             class(
               "inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600",
             ),
+            event.on_click(CopyToClipboard(model.output_html)),
           ],
           [text("Copy"), clipboard_svg()],
         ),
@@ -120,5 +128,21 @@ fn format_gleam(
 
 @external(javascript, "../prettier.mjs", "format")
 fn prettier(_code: String, _msg: msg, _dispatch: fn(a) -> Nil) -> Nil {
+  Nil
+}
+
+fn copy_to_clipboard(
+  html: String,
+  msg: fn(Result(String, String)) -> msg,
+) -> Effect(msg) {
+  effect.from(fn(dispatch) { do_copy_to_clipboard(html, msg, dispatch) })
+}
+
+@external(javascript, "../dom.mjs", "copyToClipboard")
+fn do_copy_to_clipboard(
+  _html: String,
+  _msg: msg,
+  _dispatch: fn(a) -> Nil,
+) -> Nil {
   Nil
 }

@@ -243,3 +243,19 @@ export function parse(html) {
     domToString(parser.parseFromString(html, "text/html").body.firstChild)
   );
 }
+
+export function copyToClipboard(text) {
+  const el = document.createElement("textarea");
+  el.value = text;
+  el.style.display = "none";
+  document.body.appendChild(el);
+
+  el.select();
+  el.setSelectionRange(0, 99999);
+
+  navigator.clipboard.writeText(el.value);
+
+  el.remove();
+
+  return new Ok("copied");
+}
