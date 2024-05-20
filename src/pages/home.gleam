@@ -1,8 +1,9 @@
 import config.{type Config}
+import gleam/result
 import lustre/attribute.{class}
 import lustre/effect.{type Effect}
 import lustre/element.{type Element, text}
-import lustre/element/html.{button, div, h1, span, svg, textarea}
+import lustre/element/html.{button, div, h1, pre, span, svg}
 import lustre/element/svg.{path}
 import lustre/event
 
@@ -12,6 +13,9 @@ pub type Model {
 
 pub opaque type Msg {
   SetHTML(String)
+  Formatted(Result(String, String))
+  CopyToClipboard(String)
+  DidCopy(Result(String, String))
 }
 
 pub fn init(config: Config) -> Model {
@@ -25,15 +29,28 @@ pub fn on_load(_config: Config) -> Effect(Msg) {
 pub fn update(msg: Msg, model: Model) -> #(Model, Effect(Msg)) {
   case msg {
     SetHTML(html) -> {
-      case parse_dom(html) {
-        Ok(dom) -> {
-          #(Model(..model, input_html: html, output_html: dom), effect.none())
-        }
-        Error(err) -> {
-          #(Model(..model, input_html: html, output_html: err), effect.none())
-        }
+      let parsed =
+        html
+        |> parse_dom()
+        |> result.unwrap("")
+
+      #(Model(..model, input_html: html), format_gleam(parsed, Formatted))
+    }
+
+    Formatted(result) -> {
+      case result {
+        Ok(formatted) -> #(
+          Model(..model, output_html: formatted),
+          effect.none(),
+        )
+        Error(_error) -> #(model, effect.none())
       }
     }
+    CopyToClipboard(html) -> {
+      #(model, copy_to_clipboard(html, DidCopy))
+    }
+    // Do something with the copy result later
+    DidCopy(_result) -> #(model, effect.none())
   }
 }
 
@@ -45,9 +62,14 @@ pub fn view(model: Model) -> Element(Msg) {
     div([class("flex mt-2")], [
       div([class("w-1/2 p-2")], [
         div([class("font-bold mr-2 my-3")], [text("Input HTML")]),
-        textarea(
-          [class("w-full h-full border-2"), event.on_input(SetHTML)],
-          model.input_html,
+        element.element(
+          "hey-monaco-editor",
+          [
+            class("w-full h-full border-2"),
+            event.on_input(SetHTML),
+            attribute.value(model.input_html),
+          ],
+          [],
         ),
       ]),
       div([class("w-1/2 p-2")], [
@@ -57,10 +79,11 @@ pub fn view(model: Model) -> Element(Msg) {
             class(
               "inline-flex items-center gap-x-1.5 rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600",
             ),
+            event.on_click(CopyToClipboard(model.output_html)),
           ],
           [text("Copy"), clipboard_svg()],
         ),
-        div([class("border-2 p-2 mt-2 bg-gray-800 h-full text-white")], [
+        pre([class("border-2 p-2 mt-2 bg-gray-800 h-full text-white")], [
           text(model.output_html),
         ]),
       ]),
@@ -94,4 +117,32 @@ fn clipboard_svg() -> Element(Msg) {
 @external(javascript, "../dom.mjs", "parse")
 fn parse_dom(_html: String) -> Result(String, String) {
   Error("not implemented")
+}
+
+fn format_gleam(
+  code: String,
+  msg: fn(Result(String, String)) -> msg,
+) -> Effect(msg) {
+  effect.from(fn(dispatch) { prettier(code, msg, dispatch) })
+}
+
+@external(javascript, "../prettier.mjs", "format")
+fn prettier(_code: String, _msg: msg, _dispatch: fn(a) -> Nil) -> Nil {
+  Nil
+}
+
+fn copy_to_clipboard(
+  html: String,
+  msg: fn(Result(String, String)) -> msg,
+) -> Effect(msg) {
+  effect.from(fn(dispatch) { do_copy_to_clipboard(html, msg, dispatch) })
+}
+
+@external(javascript, "../dom.mjs", "copyToClipboard")
+fn do_copy_to_clipboard(
+  _html: String,
+  _msg: msg,
+  _dispatch: fn(a) -> Nil,
+) -> Nil {
+  Nil
 }
